@@ -58,7 +58,7 @@ def main():
                     print(f"{hash_type.upper()} Hash: {hash_value}")
                     
                     # Show a command example for cracking this hash
-                    print(f"Example crack command:")
+                    print("Example crack command:")
                     print(f"python -m cracker.cli --hash {hash_value} --type {hash_type} --online-dict phpbb")
                 else:
                     print("Failed to extract hash from output")

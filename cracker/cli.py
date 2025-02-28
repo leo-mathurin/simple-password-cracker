@@ -6,6 +6,8 @@ import argparse
 import os
 import sys
 import time
+import requests
+from tqdm import tqdm
 from . import __version__
 from .hashers import get_hasher
 from .cracker import PasswordCracker
@@ -14,6 +16,51 @@ try:
     DOWNLOADER_AVAILABLE = True
 except ImportError:
     DOWNLOADER_AVAILABLE = False
+
+
+def download_from_url(url, output_dir=None):
+    """
+    Download a dictionary from a custom URL.
+    
+    Args:
+        url (str): The URL to download from
+        output_dir (str, optional): Directory to save the dictionary. Defaults to current directory.
+        
+    Returns:
+        str: Path to the downloaded file
+        
+    Raises:
+        requests.RequestException: If the download fails
+    """
+    # Determine output directory
+    if output_dir is None:
+        output_dir = os.getcwd()
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Generate filename from the URL (use the last part of the URL path)
+    filename = os.path.basename(url.split('?')[0])  # Remove query parameters if any
+    if not filename:
+        filename = "custom_dictionary.txt"
+    
+    output_path = os.path.join(output_dir, filename)
+    
+    # Download the file with progress bar
+    print(f"Downloading dictionary from {url}...")
+    response = requests.get(url, stream=True)
+    response.raise_for_status()  # Raise an exception for HTTP errors
+    
+    # Get file size from headers if available
+    total_size = int(response.headers.get('content-length', 0))
+    block_size = 1024  # 1 KB
+    
+    with open(output_path, 'wb') as f:
+        with tqdm(total=total_size, unit='B', unit_scale=True, desc="Dictionary") as pbar:
+            for data in response.iter_content(block_size):
+                f.write(data)
+                pbar.update(len(data))
+    
+    print(f"Dictionary downloaded to {output_path}")
+    return output_path
 
 
 def main():
@@ -35,6 +82,9 @@ def main():
         
         # Crack a plaintext password (automatically hashed with SHA-256)
         password-cracker --password "mypassword" --online-dict phpbb
+        
+        # Use a dictionary from a custom URL
+        password-cracker --hash 5f4dcc3b5aa765d61d8327deb882cf99 --online-dict-url https://example.com/wordlist.txt --type md5
         """
     )
     
@@ -43,6 +93,7 @@ def main():
     parser.add_argument("--password", help="Plaintext password to hash (alternative to --hash)")
     parser.add_argument("--dict", help="Path to the dictionary file")
     parser.add_argument("--online-dict", help="Download and use an online dictionary by name")
+    parser.add_argument("--online-dict-url", help="Download and use a dictionary from a custom URL")
     parser.add_argument("--type", choices=["md5", "sha1", "sha256"], 
                         help="The type of hash (md5, sha1, sha256). Defaults to sha256 when using --password")
     parser.add_argument("--verbose", action="store_true", help="Show verbose output")
@@ -124,13 +175,15 @@ def main():
             return 1
             
         # Check if dictionary is provided for cracking
-        if args.dict is None and args.online_dict is None:
-            print("Error: Either --dict or --online-dict is required for cracking", file=sys.stderr)
+        if args.dict is None and args.online_dict is None and args.online_dict_url is None:
+            print("Error: Either --dict, --online-dict, or --online-dict-url is required for cracking", file=sys.stderr)
             return 1
             
-        # Handle online dictionary if requested
+        # Handle dictionary options in order of preference
         dictionary_path = args.dict
-        if args.online_dict:
+        
+        # Handle online dictionary by name if requested
+        if dictionary_path is None and args.online_dict is not None:
             if not DOWNLOADER_AVAILABLE:
                 print("Error: Dictionary downloader is not available. Install 'requests' package.", file=sys.stderr)
                 return 1
@@ -142,6 +195,17 @@ def main():
                 return 1
             except Exception as e:
                 print(f"Error downloading dictionary: {e}", file=sys.stderr)
+                return 1
+                
+        # Handle custom URL dictionary if requested
+        if dictionary_path is None and args.online_dict_url is not None:
+            try:
+                dictionary_path = download_from_url(args.online_dict_url, args.output_dir)
+            except requests.RequestException as e:
+                print(f"Error downloading dictionary from URL: {e}", file=sys.stderr)
+                return 1
+            except Exception as e:
+                print(f"Unexpected error downloading dictionary: {e}", file=sys.stderr)
                 return 1
         
         # Create the password cracker

@@ -8,6 +8,7 @@ A Python-based CLI tool for password cracking using dictionary attacks.
 - Progress tracking for long-running operations
 - Online dictionary download from popular repositories
 - Generate hashes from plaintext passwords
+- Custom dictionary support via direct URLs
 - Modular and extensible architecture to support additional attack methods
 - Clear output and user-friendly CLI interface
 
@@ -21,7 +22,8 @@ cd simple-password-cracker
 # Create and activate a virtual environment (recommended)
 python -m venv venv
 # On Windows
-venv\Scripts\python.exe -m pip install -e .
+venv\Scripts\Activate.Ps1
+pip install -e .
 # On Unix/macOS
 source venv/bin/activate
 pip install -e .
@@ -40,6 +42,9 @@ password-cracker --hash "5f4dcc3b5aa765d61d8327deb882cf99" --dict wordlist.txt -
 
 # Using an online dictionary
 password-cracker --hash "5f4dcc3b5aa765d61d8327deb882cf99" --online-dict rockyou-75 --type md5
+
+# Using a custom dictionary URL
+password-cracker --hash "5f4dcc3b5aa765d61d8327deb882cf99" --online-dict-url https://example.com/wordlist.txt --type md5
 
 # Using plaintext password instead of hash (defaults to SHA-256)
 password-cracker --password "mypassword" --online-dict phpbb --verbose
@@ -72,6 +77,9 @@ password-cracker --download rockyou-75
 
 # Download a dictionary to a specific location
 password-cracker --download phpbb --output-dir /path/to/save
+
+# Download a dictionary from a custom URL
+password-cracker --online-dict-url https://example.com/wordlist.txt --output-dir ./dictionaries
 ```
 
 ### Command-line Arguments
@@ -81,6 +89,7 @@ password-cracker --download phpbb --output-dir /path/to/save
 - `--password`: A plaintext password to hash (alternative to --hash)
 - `--dict`: Path to the local dictionary file
 - `--online-dict`: Name of an online dictionary to download and use
+- `--online-dict-url`: URL to a custom dictionary to download and use
 - `--type`: Hash type (md5, sha1, sha256). Required with --hash, optional with --password (defaults to sha256)
 - `--verbose`: Show detailed progress information
 - `--only-hash`: Only generate and display the hash, don't attempt to crack (when used with --password)
