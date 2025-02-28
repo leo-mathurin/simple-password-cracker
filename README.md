@@ -6,6 +6,8 @@ A Python-based CLI tool for password cracking using dictionary attacks.
 
 - Dictionary attack against common hash types (MD5, SHA-1, SHA-256)
 - Progress tracking for long-running operations
+- Online dictionary download from popular repositories
+- Generate hashes from plaintext passwords
 - Modular and extensible architecture to support additional attack methods
 - Clear output and user-friendly CLI interface
 
@@ -27,23 +29,66 @@ pip install -e .
 
 ## Usage
 
+### Basic Password Cracking
+
 ```bash
-# Basic usage
+# Basic usage with local dictionary
 password-cracker --hash "5f4dcc3b5aa765d61d8327deb882cf99" --dict wordlist.txt --type md5
 
 # With all options
 password-cracker --hash "5f4dcc3b5aa765d61d8327deb882cf99" --dict wordlist.txt --type md5 --verbose
 
+# Using an online dictionary
+password-cracker --hash "5f4dcc3b5aa765d61d8327deb882cf99" --online-dict rockyou-75 --type md5
+
+# Using plaintext password instead of hash (defaults to SHA-256)
+password-cracker --password "mypassword" --online-dict phpbb --verbose
+
+# Specify a different hash type with plaintext password
+password-cracker --password "mypassword" --online-dict phpbb --type md5 --verbose
+
 # Using the module directly if the entry point isn't working
 python -m cracker.cli --hash "5f4dcc3b5aa765d61d8327deb882cf99" --dict wordlist.txt --type md5
 ```
 
+### Hash Generation
+
+```bash
+# Generate a hash from a plaintext password without cracking (defaults to SHA-256)
+password-cracker --password "mypassword" --only-hash
+
+# Generate MD5 hash
+password-cracker --password "password123" --type md5 --only-hash
+```
+
+### Online Dictionary Management
+
+```bash
+# List available online dictionaries
+password-cracker --list-dicts
+
+# Download a dictionary without cracking
+password-cracker --download rockyou-75
+
+# Download a dictionary to a specific location
+password-cracker --download phpbb --output-dir /path/to/save
+```
+
 ### Command-line Arguments
 
+#### Hash Cracking Options
 - `--hash`: The hash to crack
-- `--dict`: Path to the dictionary file
-- `--type`: Hash type (md5, sha1, sha256)
+- `--password`: A plaintext password to hash (alternative to --hash)
+- `--dict`: Path to the local dictionary file
+- `--online-dict`: Name of an online dictionary to download and use
+- `--type`: Hash type (md5, sha1, sha256). Required with --hash, optional with --password (defaults to sha256)
 - `--verbose`: Show detailed progress information
+- `--only-hash`: Only generate and display the hash, don't attempt to crack (when used with --password)
+
+#### Dictionary Management
+- `--list-dicts`: List available online dictionaries
+- `--download`: Download a specific dictionary without cracking
+- `--output-dir`: Directory to save downloaded dictionaries
 
 ## Project Structure
 
@@ -53,6 +98,7 @@ simple-password-cracker/
 │   ├── __init__.py                # Package initialization
 │   ├── cli.py                     # Command-line interface
 │   ├── cracker.py                 # Core cracking functionality
+│   ├── downloader.py              # Dictionary download utilities
 │   └── hashers/                   # Hash algorithm implementations
 │       ├── __init__.py
 │       ├── base.py                # Base hasher class

@@ -7,6 +7,7 @@ setup(
     install_requires=[
         "tqdm>=4.64.0",
         "argparse>=1.4.0",
+        "requests>=2.25.0",
     ],
     entry_points={
         "console_scripts": [
