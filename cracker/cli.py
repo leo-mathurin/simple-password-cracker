@@ -44,6 +44,24 @@ except Exception as e:
     GPU_AVAILABLE = False
     OPENCL_AVAILABLE = False
 
+# Try to import the multi-threaded CPU brute force module
+CPU_THREADED_AVAILABLE = False
+try:
+    from .cpu_bruteforce import cpu_multi_threaded_brute_force_attack
+    CPU_THREADED_AVAILABLE = True
+except ImportError as e:
+    print(f"CPU multi-threading module import error: {e}")
+    
+    # For development - try importing the module directly if the relative import fails
+    try:
+        # This is a fallback for development/debugging only
+        sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        from cracker.cpu_bruteforce import cpu_multi_threaded_brute_force_attack
+        CPU_THREADED_AVAILABLE = True
+        print("CPU multi-threading module imported via fallback path")
+    except ImportError as e2:
+        print(f"CPU multi-threading fallback import error: {e2}")
+
 try:
     from .downloader import download_wordlist, list_available_wordlists
     DOWNLOADER_AVAILABLE = True
@@ -156,6 +174,11 @@ def main():
     parser.add_argument("--gpu-batch-size", type=int, default=1000000, help="Batch size for GPU processing (default: 1,000,000)")
     parser.add_argument("--opencl-platform", type=int, help="OpenCL platform index to use")
     parser.add_argument("--opencl-device", type=int, help="OpenCL device index to use")
+    
+    # Add CPU multi-threading arguments
+    parser.add_argument("--use-threads", action="store_true", help="Use CPU multi-threading for brute force attack")
+    parser.add_argument("--threads", type=int, help="Number of CPU threads to use (default: auto-detect)")
+    parser.add_argument("--cpu-batch-size", type=int, default=100000, help="Batch size for CPU multi-threaded processing (default: 100,000)")
     
     # Add arguments for dictionary management
     parser.add_argument("--list-dicts", action="store_true", help="List available online dictionaries")
@@ -286,6 +309,7 @@ def main():
             
             # Check if GPU acceleration should be used
             use_gpu = args.use_gpu and GPU_MODULE_AVAILABLE
+            use_threads = args.use_threads and CPU_THREADED_AVAILABLE
             
             if use_gpu:
                 # Use GPU-accelerated brute force
@@ -300,6 +324,19 @@ def main():
                     verbose=args.verbose,
                     platform_index=args.opencl_platform,
                     device_index=args.opencl_device
+                )
+            elif use_threads:
+                # Use multi-threaded CPU brute force
+                print("\nUsing multi-threaded CPU brute force attack")
+                password, attempts = cpu_multi_threaded_brute_force_attack(
+                    hasher=hasher,
+                    hash_to_crack=hash_to_crack,
+                    charset=custom_charset,
+                    min_length=args.min_length,
+                    max_length=args.max_length,
+                    batch_size=args.cpu_batch_size,
+                    threads=args.threads,
+                    verbose=args.verbose
                 )
             else:
                 # Use CPU brute force

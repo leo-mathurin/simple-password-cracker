@@ -69,6 +69,24 @@ class BruteForceGenerator:
             for combo in itertools.product(self.charset, repeat=length):
                 yield ''.join(combo)
                 
+    def generate_length(self, length: int) -> Generator[str, None, None]:
+        """
+        Generate all possible combinations of a specific length.
+        
+        Args:
+            length: The length of passwords to generate
+            
+        Yields:
+            str: Each possible password combination of the given length
+        """
+        # Ensure the length is within the valid range
+        if length < self.min_length or length > self.max_length:
+            return
+            
+        # Generate all combinations of the specified length
+        for combo in itertools.product(self.charset, repeat=length):
+            yield ''.join(combo)
+                
     @property
     def total_combinations(self) -> int:
         """
